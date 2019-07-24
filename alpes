@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+set -e;
+
+readonly __DIR__="$(realpath "$(dirname "$0")")";
+readonly ROOT="${ROOT:-"${__DIR__}/build"}";
+readonly TMP="${TMP:-"${__DIR__}/tmp"}";
+readonly OUT="${OUT:-"${__DIR__}/out"}";
+cd "${__DIR__}";
+
+enable_services() {
+    for runlevel in boot sysinit default; do
+        install -d "${ROOT}/etc/runlevels/$runlevel"
+    done
+
+    for service in devfs dmesg mdev hwdrivers; do
+        chroot "${ROOT}" rc-update add $service sysinit;
+    done
+
+    for service in agetty.ttyS0 firstboot docker; do
+        chroot "${ROOT}" rc-update add $service default
+    done
+    
+    for service in modules hwclock hostname sysctl bootmisc syslog networking rngd; do
+        chroot "${ROOT}" rc-update add $service boot;
+    done
+}
+
+build_rootfs() {
+    # Load config
+    . ./alpes-config
+    # Make temp dir
+    mkdir -p "${TMP}";
+    wget -O "${TMP}/rootfs.tar.gz" "http://dl-cdn.alpinelinux.org/alpine/${version}/releases/x86_64/alpine-minirootfs-${rootfsversion}-x86_64.tar.gz"
+    # Clean current build dir
+    test -d "${ROOT}" && rm -rf "${ROOT}";
+    # Make build dir if not exists
+    mkdir -p "${ROOT}";
+    # Extract alpine rootfs in build dir
+    cd "${ROOT}";
+    tar xf "${TMP}/rootfs.tar.gz"
+    cd "${__DIR__}";
+    # Create resolve.conf
+    echo "nameserver 1.1.1.1" > "${ROOT}/etc/resolve.conf"
+    # Create interfaces config
+    mkdir -p "${ROOT}/etc/network";
+    cat > "${ROOT}/etc/network/interfaces" <<"EOF"
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+EOF
+    # Install requested packages
+    apk -p "${ROOT}" --initramfs-diskless-boot add $pkgs
+    # Set root password
+    chroot "${ROOT}" bash -c '(echo kaakje; echo kaakje) | passwd root && usermod -s /bin/bash root'
+
+    # Create service to show login on serial connection
+    ln -s /etc/init.d/agetty "${ROOT}/etc/init.d/agetty.ttyS0"
+    
+    # Mount proc, which is needed to enable services on runlevel boot
+    mount -t proc procfs "${ROOT}/proc"
+    enable_services || (umount "${ROOT}/proc"; exit 1);
+    umount "${ROOT}/proc";
+    
+    # Copy kernel modules
+    mkdir -p "${ROOT}/lib/modules";
+    cp -r $modules "${ROOT}/lib/modules"
+    
+    # Copy initrd init and set executable
+    cp "${__DIR__}/files/pivot-init.sh" "${ROOT}/init"
+    chmod +x "${ROOT}/init";
+
+    # Create random seed
+    dd if=/dev/urandom of="${ROOT}/var/lib/random-seed" count=1 bs=512 >/dev/null 2>&1
+}
+
+build_initrd() {
+    mkdir -p "${OUT}";
+    
+    # Create initrd
+    cd "${ROOT}";
+    find . | cut -c 3- | cpio -o -H newc --block-size=8 | gzip -9 > "${OUT}/initrd"
+    cd "${__DIR__}";
+    sync;
+
+    # Make sure initrd size is dividable by 4096
+    local size=$(stat -c"%s" "${OUT}/initrd");
+    local over=$(($size % 4096));
+    local pad=$((4096 - $over));
+    if [ "$pad" != "4096" ]; then
+        dd if=/dev/zero of="${OUT}/initrd" count="$pad" seek="$size" bs=1
+    fi
+}
+
+main() {
+    build_rootfs;
+    build_initrd;
+}
+
+main "$@";

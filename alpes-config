@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Packages that should be installed
+pkgs="alpine-base bash util-linux bind-tools shadow"
+# Alpine version
+version="v3.10"
+# rootfsversion
+rootfsversion="3.10.1"
+# Location to copy /lib/modules from
+modules="/var/empty"
