@@ -8,6 +8,8 @@ readonly OUT="${OUT:-"${__DIR__}/out"}";
 cd "${__DIR__}";
 
 enable_services() {
+    . ${__DIR__}/alpes-config
+
     for runlevel in boot sysinit default; do
         install -d "${ROOT}/etc/runlevels/$runlevel"
     done
@@ -16,11 +18,11 @@ enable_services() {
         chroot "${ROOT}" rc-update add $service sysinit;
     done
 
-    for service in agetty.ttyS0 firstboot docker; do
+    for service in agetty.ttyS0 firstboot $services; do
         chroot "${ROOT}" rc-update add $service default
     done
     
-    for service in modules hwclock hostname sysctl bootmisc syslog networking rngd; do
+    for service in modules hwclock hostname sysctl bootmisc syslog networking; do
         chroot "${ROOT}" rc-update add $service boot;
     done
 }
@@ -71,8 +73,8 @@ EOF
     cp "${__DIR__}/files/pivot-init.sh" "${ROOT}/init"
     chmod +x "${ROOT}/init";
 
-    # Create random seed
-    dd if=/dev/urandom of="${ROOT}/var/lib/random-seed" count=1 bs=512 >/dev/null 2>&1
+    # Copy overlay over root
+    cp -r "$overlay/." "${ROOT}/."
 }
 
 build_initrd() {
@@ -93,8 +95,18 @@ build_initrd() {
     fi
 }
 
+run_pre_build_hooks() {
+    . "${__DIR__}/alpes-config"
+
+    for hook in $pre_build_hooks; do
+        cd "${ROOT}";
+        . "$hook";
+    done
+}
+
 main() {
     build_rootfs;
+    run_pre_build_hooks;
     build_initrd;
 }
 

@@ -15,6 +15,8 @@ ls ./out
 
 ## Running
 
+While the `root` argument is supplied, it is actually never used since the whole OS is packages into the initramfs
+
 ```bash
 kernel="[put your wanted kernel here]"
 qemu-system-x86_64 \
@@ -24,18 +26,25 @@ qemu-system-x86_64 \
     -nographic \
     -m 1G \
     -net nic \
-    -net user
+    -net user \
+    -device virtio-rng-pci
 ```
 
 ## Config (`alpes-config`)
 
 ```bash
 # Packages that should be installed
-pkgs="alpine-base bash util-linux bind-tools shadow coreutils docker iptables rng-tools"
+pkgs="alpine-base bash util-linux bind-tools shadow"
+# Services that should be enabled
+services=""
 # Alpine version
 version="v3.10"
 # rootfsversion
 rootfsversion="3.10.1"
 # Location to copy /lib/modules from
-modules="/dev/empty"
+modules="/var/empty"
+# Directory that will be copied over root dir
+overlay="/var/empty"
+# Scripts to be executed before building cpio archive
+pre_build_hooks=""
 ```
