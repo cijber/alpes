@@ -14,7 +14,7 @@ start() {
     docker load --input /var/alpes/docker/images &>  /var/log/alpes-docker.log;
     eend $? "Failed loading cached docker images"
     rm /var/alpes/docker/images;
-    ebegin "Running start Alpes docker start script"
+    ebegin "Running Alpes docker start script"
     sh /etc/alpes/alpes-docker
     eend $? "Alpes docker start script failed"
 }
