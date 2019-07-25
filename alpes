@@ -65,14 +65,22 @@ EOF
     mount -t proc procfs "${ROOT}/proc"
     enable_services || (umount "${ROOT}/proc"; exit 1);
     umount "${ROOT}/proc";
-    
-    # Copy kernel modules
-    mkdir -p "${ROOT}/lib/modules";
-    cp -r $modules "${ROOT}/lib/modules"
+
+
     
     # Copy initrd init and set executable
     cp "${__DIR__}/files/pivot-init.sh" "${ROOT}/init"
     chmod +x "${ROOT}/init";
+    
+    if [ "$add_kernel" == "1" ]; then
+        mkdir -p "${OUT}";
+        mv "${ROOT}/boot/$kernel" "${OUT}/kernel"
+        rm -rf "${ROOT}/boot";
+    else
+        # Copy kernel modules
+        mkdir -p "${ROOT}/lib/modules";
+        cp -r $modules "${ROOT}/lib/modules"
+    fi
 
     # Copy overlay over root
     cp -r "$overlay/." "${ROOT}/."

@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 # Packages that should be installed
-pkgs="alpine-base bash util-linux bind-tools shadow"
+pkgs="alpine-base bash util-linux bind-tools shadow linux-virt"
 # Services that should be enabled
 services=""
 # Alpine version
 version="v3.10"
 # rootfsversion
 rootfsversion="3.10.1"
+# Add kernel and modules from alpine
+add_kernel=1
+# Which kernel to use
+kernel="vmlinuz-virt"
 # Location to copy /lib/modules from
-modules="/var/empty"
+modules="/lib/modules/."
 # Directory that will be copied over root dir
 overlay="/var/empty"
 # Scripts to be executed before building cpio archive
