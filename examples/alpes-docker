@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+CONFIG_DIR="$(dirname "${CONFIG}")";
+
+# Packages that should be installed
+pkgs="alpine-base bash util-linux bind-tools shadow iptables docker"
+# Services that should be enabled
+services="docker"
+# Alpine version
+version="v3.10"
+# rootfsversion
+rootfsversion="3.10.1"
+# Location to copy /lib/modules from
+modules="/lib/modules/5.1.19_1"
+# Directory that will be copied over root dir
+overlay="${CONFIG_DIR}/docker/overlay"
+# Scripts to be executed before building cpio archive
+pre_build_hooks=${CONFIG_DIR}/docker/hooks/*
+
+# Hooks config
+# ---
+# Docker images to import for the boot image
+docker_import="redis:alpine"
+# Script to run once dockerd is booted
+docker_run="${CONFIG_DIR}/docker/files/docker-run"

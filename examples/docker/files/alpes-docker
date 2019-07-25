@@ -1,0 +1,21 @@
+#!/sbin/openrc-run
+# Distributed under the terms of the GNU General Public License v2
+
+depend() {
+    need docker;
+}
+
+start() {
+    while docker version 2>&1 | grep -q 'Cannot connect'; do
+        sleep 1;
+    done;
+
+    ebegin "Loading cached docker images"
+    docker load --input /var/alpes/docker/images &>  /var/log/alpes-docker.log;
+    eend $? "Failed loading cached docker images"
+    rm /var/alpes/docker/images;
+    ebegin "Running start Alpes docker start script"
+    sh /etc/alpes/alpes-docker
+    eend $? "Alpes docker start script failed"
+}
+

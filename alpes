@@ -5,10 +5,11 @@ readonly __DIR__="$(realpath "$(dirname "$0")")";
 readonly ROOT="${ROOT:-"${__DIR__}/build"}";
 readonly TMP="${TMP:-"${__DIR__}/tmp"}";
 readonly OUT="${OUT:-"${__DIR__}/out"}";
+readonly CONFIG="$(realpath "${CONFIG:-"${1:-"${__DIR__}/alpes-config"}"}")"
 cd "${__DIR__}";
 
 enable_services() {
-    . ${__DIR__}/alpes-config
+    . "${CONFIG}"
 
     for runlevel in boot sysinit default; do
         install -d "${ROOT}/etc/runlevels/$runlevel"
@@ -29,7 +30,7 @@ enable_services() {
 
 build_rootfs() {
     # Load config
-    . ./alpes-config
+    . "${CONFIG}"
     # Make temp dir
     mkdir -p "${TMP}";
     wget -O "${TMP}/rootfs.tar.gz" "http://dl-cdn.alpinelinux.org/alpine/${version}/releases/x86_64/alpine-minirootfs-${rootfsversion}-x86_64.tar.gz"
@@ -96,7 +97,7 @@ build_initrd() {
 }
 
 run_pre_build_hooks() {
-    . "${__DIR__}/alpes-config"
+    . "${CONFIG}"
 
     for hook in $pre_build_hooks; do
         cd "${ROOT}";
